@@ -1,0 +1,47 @@
+# ProjectedBATCLIP — 10K regime (50 batches × 200, 1 step each)
+# Components 1 (ProjectedInterMean) + 2 (evidence gate) active.
+# Component 3 (recirculation) disabled (MAX_RECIRC_STEPS=1).
+CORRUPTION:
+  DATASET: cifar10_c
+  SEVERITY:
+    - 5
+  TYPE:
+    - gaussian_noise
+    - shot_noise
+    - impulse_noise
+    - defocus_blur
+    - glass_blur
+    - motion_blur
+    - zoom_blur
+    - snow
+    - frost
+    - fog
+    - brightness
+    - contrast
+    - elastic_transform
+    - pixelate
+    - jpeg_compression
+MODEL:
+  ADAPTATION: projectedbatclip
+  ARCH: ViT-B-16
+  WEIGHTS: openai
+  USE_CLIP: True
+  EPISODIC: False
+OPTIM:
+  LR: 1e-3
+  METHOD: AdamW
+  STEPS: 1
+  BETA: 0.9
+  WD: 0.01
+TEST:
+  BATCH_SIZE: 200
+CLIP:
+  PRECISION: "fp32"
+  FREEZE_TEXT_ENCODER: False
+  PROMPT_MODE: "custom"
+  PROMPT_TEMPLATE: ["a photo of a {}."]
+PROJECTED_BATCLIP:
+  TAU_GATE: "median"      # Component 2: dynamic median gate
+  MAX_RECIRC_STEPS: 1     # Component 3: off (10K regime)
+  DEFF_EPS: 0.01
+  PLATEAU_PATIENCE: 3

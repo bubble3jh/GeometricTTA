@@ -1,0 +1,38 @@
+# SoftLogitTTA (v2.1 best) — gaussian_noise, severity=5, N=10K
+# Best: ladj_5 config — acc=0.666 (+4.3pp vs BATCLIP 0.623)
+# Key: w_pot=0 (no softplus repulsion), lambda_adj=5 (strong prior correction), w_uni=0.5
+CORRUPTION:
+  DATASET: cifar10_c
+  SEVERITY:
+    - 5
+  TYPE:
+    - gaussian_noise
+MODEL:
+  ADAPTATION: softlogittta
+  ARCH: ViT-B-16
+  WEIGHTS: openai
+  USE_CLIP: True
+  EPISODIC: False
+OPTIM:
+  LR: 1e-3
+  METHOD: AdamW
+  STEPS: 1
+  BETA: 0.9
+  WD: 0.01
+TEST:
+  BATCH_SIZE: 200
+CLIP:
+  PRECISION: "fp32"
+  FREEZE_TEXT_ENCODER: False
+  PROMPT_MODE: "custom"
+  PROMPT_TEMPLATE: ["a photo of a {}."]
+SOFT_LOGIT_TTA:
+  BETA_HIST: 0.9
+  LAMBDA_ADJ: 5.0
+  CLIP_M: 3.0
+  ALPHA_S: 2.0
+  MARGIN_POT: 0.3
+  GAMMA_POT: 10.0
+  W_I2T: 1.0
+  W_POT: 0.0
+  W_UNI: 0.5

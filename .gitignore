@@ -1,0 +1,43 @@
+# Claude Code local settings
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/agent-memory-local/
+.claude/worktrees/
+
+# Experiment run artifacts (large binary/output dirs)
+experiments/runs/
+notes/figures/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Data directories (large datasets)
+experiments/baselines/BATCLIP/classification/data/
+data/
+
+# Logs & temp
+*.log
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model checkpoints (large)
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors

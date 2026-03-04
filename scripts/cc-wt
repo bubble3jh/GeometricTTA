@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Convenience wrapper around git worktree layout used by Claude Code.
+# Claude Code can create worktrees automatically via: `claude -w <name>`
+# This script is useful when you want to manage them manually.
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "${ROOT}" ]]; then
+  echo "Not inside a git repo." >&2
+  exit 1
+fi
+
+WT_DIR="${ROOT}/.claude/worktrees"
+mkdir -p "${WT_DIR}"
+
+cmd="${1:-}"
+shift || true
+
+usage() {
+  cat <<EOF
+Usage:
+  cc-wt list
+  cc-wt new <name> [branch]
+  cc-wt rm <name>
+  cc-wt path <name>
+
+Examples:
+  cc-wt new za
+  cd "$(cc-wt path za)"
+EOF
+}
+
+case "${cmd}" in
+  list)
+    git worktree list
+    ;;
+  new)
+    name="${1:-}"
+    branch="${2:-wt/${name}}"
+    if [[ -z "${name}" ]]; then usage; exit 1; fi
+    git worktree add "${WT_DIR}/${name}" -b "${branch}"
+    echo "${WT_DIR}/${name}"
+    ;;
+  rm)
+    name="${1:-}"
+    if [[ -z "${name}" ]]; then usage; exit 1; fi
+    git worktree remove "${WT_DIR}/${name}"
+    ;;
+  path)
+    name="${1:-}"
+    if [[ -z "${name}" ]]; then usage; exit 1; fi
+    echo "${WT_DIR}/${name}"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
