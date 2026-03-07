@@ -102,7 +102,7 @@ def load_data(preprocess, n=N_TOTAL):
         rng_seed=cfg.RNG_SEED if cfg.RNG_SEED else 1,
         use_clip=cfg.MODEL.USE_CLIP, n_views=1, delta_dirichlet=0.0,
         batch_size=BATCH_SIZE, shuffle=False,
-        workers=min(4, os.cpu_count()),
+        workers=2,
     )
     imgs_list, labels_list = [], []
     for batch in loader:
@@ -263,6 +263,8 @@ def main():
     seed = cfg.RNG_SEED if cfg.RNG_SEED else 1
     torch.manual_seed(seed); np.random.seed(seed)
 
+    t_start   = time.time()
+    start_str = time.strftime("%Y-%m-%d %H:%M:%S")
     ts      = time.strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(SCRIPT_DIR, "..", "experiments", "runs",
                            "soft_logit_tta", f"v21_{ts}")
@@ -337,6 +339,25 @@ def main():
     print("=" * 72)
     print(f"\nBest: {best['label']}  acc={best['final_acc']:.4f}  "
           f"Δ={best['delta_vs_batclip']:+.4f}")
+
+    # ── Slack notification ──────────────────────────────────────────────────────
+    try:
+        sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
+        from send_slack_exp import notify_sweep_done
+        summary = (
+            f"runs={len(results['runs'])}  corruption={CORRUPTION}\n"
+            f"best: {best['label']}  acc={best['final_acc']:.4f}  "
+            f"Δ={best['delta_vs_batclip']:+.4f}\n"
+            f"results → {json_path}"
+        )
+        notify_sweep_done(
+            "SoftLogitTTA v2.1 sweep",
+            summary,
+            elapsed=time.time() - t_start,
+            start_str=start_str,
+        )
+    except Exception as e:
+        logger.warning(f"Slack 알림 실패: {e}")
 
 
 if __name__ == "__main__":

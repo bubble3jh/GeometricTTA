@@ -1,0 +1,11 @@
+# Claude Code local settings (not shared)
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/agent-memory-local/
+
+# Claude Code worktrees (each is a full checkout; keep them out of git status)
+.claude/worktrees/
+
+# Experiment run artifacts (adjust to taste)
+experiments/runs/
+notes/figures/

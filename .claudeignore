@@ -1,0 +1,94 @@
+# ── Python cache ───────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.mypy_cache/
+.ruff_cache/
+.pytype/
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+.env/
+miniconda*/
+anaconda*/
+
+# ── ML: checkpoints & model weights ───────────────────────────────────────────
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.pkl
+*.pickle
+ckpt/
+checkpoints/
+
+# ── ML: datasets & raw data ───────────────────────────────────────────────────
+data/
+datasets/
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.tfrecord
+*.parquet
+*.arrow
+*.csv
+
+# ── Experiment run artifacts (large JSONs, logs, outputs) ─────────────────────
+# experiments/runs/ 는 포함 — results.json이 주요 성능 기록 소스
+# classification/output/ 는 포함 — 2월 초기 runs에만 유효한 로그 있음
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+*.out
+logs/
+wandb/
+mlruns/
+tensorboard/
+tb_logs/
+
+# ── Jupyter ────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── Node / JS (if any) ────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+*.min.js
+*.map
+
+# ── Git internals ──────────────────────────────────────────────────────────────
+.git/
+
+# ── Secrets & credentials ──────────────────────────────────────────────────────
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets/
+
+# ── OS / editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Large media / compiled ────────────────────────────────────────────────────
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mp3
+*.zip
+*.tar.gz
+*.whl

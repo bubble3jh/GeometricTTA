@@ -952,7 +952,7 @@ def main():
         delta_dirichlet=0.0,
         batch_size=BATCH_SIZE,
         shuffle=False,
-        workers=min(4, os.cpu_count()),
+        workers=2,
     )
 
     # Cache all batches into CPU RAM
