@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "opusplan",
+  "statusLine": {
+    "type": "command",
+    "command": "python3 .claude/statusline.py",
+    "padding": 1
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(git rev-parse *)",
+      "Bash(git ls-tree *)",
+      "Bash(git grep *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
+      "Bash(pytest *)",
+      "Bash(python -m pytest *)",
+      "Bash(python3 -m pytest *)",
+      "Bash(ruff *)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make check)",
+      "Bash(python3 .claude/hooks/log_peek.py *)",
+      "Read"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gcloud/**)",
+      "Read(**/*id_rsa*)",
+      "Bash(cat ./.env*)",
+      "Bash(cat .env*)",
+      "Bash(cat ./.env.*)",
+      "Bash(cat .env.*)",
+      "Bash(cat ./secrets/*)",
+      "Bash(cat secrets/*)",
+      "Bash(cat ~/.ssh/*)",
+      "Bash(cat ~/.aws/*)",
+      "Bash(cat ~/.config/gcloud/*)",
+      "Bash(cat *id_rsa*)",
+      "Bash(cat *.pem)",
+      "Bash(cat *.key)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(rm -rf /)",
+      "Bash(mkfs*)",
+      "Bash(dd *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pretooluse_bash_guard.py"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/permission_request_router.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/stop_guard.py"
+          }
+        ]
+      }
+    ]
+  }
+}
