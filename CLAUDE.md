@@ -20,6 +20,8 @@ literature discovery
   - `impl-*`     : implementation + experiments
   - `analysis-*` : log reading, metrics, ablations
   - `report-*`   : write-up / case study
+  - **NotebookLM notebooks:** one notebook per research topics (mirrors `research-*` lane). Name: `<project>-<topic>`. 
+  All agents share the same notebook for the same topic.
 
 ## Cost & context guardrails (anti-bloat)
 - **Visibility:** use the status line (ctx% + $). Use `/context` to see what is consuming context. Use `/cost` (API users) or `/stats` (subscribers) to inspect usage.
@@ -27,6 +29,8 @@ literature discovery
 - **Compaction:** when context feels bloated, run `/compact`. Keep summaries short and link to files instead of pasting large blobs.
 - **Verbose outputs:** never paste huge logs or `cat` big files into chat. Use `tail`, `rg`, or the repo helper `python3 .claude/hooks/log_peek.py <path>`.
 - Details live in `.claude/rules/40-cost.md`.
+- **PDFs:** never load paper PDFs into context directly. Add via NotebookLM MCP (`source_add`) and query with 
+  `notebook_query`. One notebook per research topic.
 
 ## Plan-first rule (use Plan mode aggressively)
 When any of these are true, **switch to Plan mode first** and write a plan before editing:
@@ -38,7 +42,8 @@ When any of these are true, **switch to Plan mode first** and write a plan befor
 Keep this file short. Put detailed workflows in:
 - `experiments/CLAUDE.md` (loaded when working under experiments/)
 - `reports/CLAUDE.md` (loaded when working under reports/)
-- `.claude/rules/*.md` (modular rules)
+- `.claude/rules/*.md` (modular rules — always loaded regardless of CWD)
+  - `.claude/rules/50-experiment-ops.md` ← experiment launch checklist + monitor.py announcement + status_writer (always applies)
 - `.claude/skills/*` (reusable slash commands)
 
 ## Multi-agent routing (lead = current session)
@@ -63,6 +68,8 @@ ResearchScout
   - collect relevant papers, repos, benchmarks, and datasets
   - identify representative baselines and evaluation protocols
   - avoid deep synthesis; focus on breadth and coverage
+  - for collected papers, add arXiv/public PDF URLs to NotebookLM via `source_add` (jacob-bd MCP); query via `notebook_query` 
+    instead of loading PDFs into context
 - Output:
   - scoped reading list
   - benchmark/dataset/backbone shortlist
@@ -76,6 +83,7 @@ LiteratureSynthesizer
   - cluster prior work by method family, assumption, or evaluation setup
   - extract common design patterns, objectives, and limitations
   - normalize terminology across papers
+  - retrieve paper content via NotebookLM `notebook_query`, not by re-reading raw PDFs
 - Output:
   - structured literature map
   - method taxonomy

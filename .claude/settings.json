@@ -66,6 +66,11 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/pretooluse_bash_guard.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/notify.py",
+            "env": {"CLAUDE_HOOK_EVENT": "PreToolUse"}
           }
         ]
       }
@@ -77,6 +82,28 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/permission_request_router.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/notify.py",
+            "env": {"CLAUDE_HOOK_EVENT": "PostToolUse"}
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/notify.py",
+            "env": {"CLAUDE_HOOK_EVENT": "PostToolUse"}
           }
         ]
       }
