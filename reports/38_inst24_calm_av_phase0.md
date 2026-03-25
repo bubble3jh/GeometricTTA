@@ -19,7 +19,7 @@
 
 | Item | Value |
 |------|-------|
-| Base method | CALM H2 C-variant (Harmonic Simplex, α=0.1, β=0.3, λ=2.0) |
+| Base method | CALM CAMA C-variant (Harmonic Simplex, α=0.1, β=0.3, λ=2.0) |
 | Dataset | CIFAR-10-C, sev=5, N=10000, B=200, seed=1 |
 | Runs | D0-GN (gaussian_noise), D0-IN (impulse_noise), D0-GB (glass_blur) |
 | Model changes | None — all diagnostics detached |
@@ -84,7 +84,7 @@ m_cat trajectory (D0-GN): first-half mean=0.0172 → second-half mean=0.0269
 | D0-IN | 0.7630 | 0.1090 | — |
 | D0-GB | 0.6704 | 0.1009 | — |
 
-*(Online acc should be ~0.677 = CALM H2 C-variant, confirming no model change.)*
+*(Online acc should be ~0.677 = CALM CAMA C-variant, confirming no model change.)*
 
 ---
 

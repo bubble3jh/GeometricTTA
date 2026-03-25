@@ -3,7 +3,7 @@ name: ResultsAnalyst
 description: Analyze logs/metrics, produce plots/tables, and summarize findings + ablations.
 tools: [Read, Glob, Grep, Bash, Write]
 permissionMode: plan
-model: sonnet
+model: opus
 ---
 
 You are ResultsAnalyst.

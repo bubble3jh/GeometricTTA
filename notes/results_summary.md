@@ -1,206 +1,178 @@
-# MINT-TTA and SoftLogitTTA: Per-Corruption Results Summary
+# K=1000 ImageNet-C CAMA: defocus_blur / glass_blur offline < online 이상 현상 분석
 
-Generated: 2026-03-08
-Dataset: CIFAR-10-C, Severity=5, N=10,000 per corruption, Seed=1, ViT-B-16 (QuickGELU, openai weights)
-
----
-
-## 1. Source Inventory
-
-| Source | Path | Coverage |
-|--------|------|----------|
-| BATCLIP baselines (ours) | `output/ours_cifar10_c_26030[5-7]_*/` | 14 corruptions (no gaussian_noise) |
-| BATCLIP gaussian_noise | `output/ours_cifar10_c_260301_214950/` | gaussian_noise sev=5 |
-| MINT-TTA shard logs | `runs/mint_tta/shard[1-6]_*/mint_lmi*.log` | lambda=[1,2,5,10] x 14 corruptions |
-| MINT-TTA gaussian_noise | `runs/mint_tta/run_20260304_151922/` + phase ablations | gaussian_noise only |
-| MINT-TTA best-config CSV | `runs/mint_tta/results_summary.csv` | All 15 corruptions (curated) |
-| SoftLogitTTA (gaussian_noise) | `runs/soft_logit_tta/v21_20260303_151500/results.json` | gaussian_noise only |
-| SoftLogitTTA per-corruption | `output/softlogittta_cifar10_c_26030[5-7]_*/` | **All empty** — no per-corruption data |
-
-**Important caveat:** SoftLogitTTA was only evaluated on gaussian_noise (severity=5).
-The `Δ_SoftLogit` field in the MINT-TTA shard logs uses 0.666 as a fixed reference scalar,
-not per-corruption SoftLogitTTA results. No per-corruption SoftLogitTTA sweep was completed.
+Generated: 2026-03-23
+Dataset: ImageNet-C, severity=5, N=50000, BS=64, K=1000
+Backbone: ViT-B-16 (OpenAI CLIP), AdamW lr=5e-4 wd=0.01, AMP
+Method: CAMA Loss B = -I_batch + (lam-1) * KL(p_bar || p_dag)
+Script: `manual_scripts/codes/run_imagenet_c_cama.py`
+Log: laptop `logs/imagenet_c_cama_laptop_20260322_110729.log`
+Results: `notes/lossB_auto_results.csv`
+Figure: `notes/figures/k1000_blur_degradation.png`
 
 ---
 
-## 2. BATCLIP Baseline Accuracy (All 15 Corruptions, Severity=5)
+## 1. 결론 (요약)
 
-| Corruption | Error (%) | Accuracy | Source |
-|---|---|---|---|
-| gaussian_noise | 39.40 | 0.6060 | ours_260301_214950 |
-| shot_noise | 37.57 | 0.6243 | ours_260305_082510 |
-| impulse_noise | 39.86 | 0.6014 | ours_260305_082614 |
-| defocus_blur | 21.00 | 0.7900 | ours_260305_082707 |
-| glass_blur | 46.38 | 0.5362 | ours_260305_213323 |
-| motion_blur | 21.23 | 0.7877 | ours_260305_213428 |
-| zoom_blur | 19.61 | 0.8039 | ours_260306_103406 |
-| snow | 17.75 | 0.8225 | ours_260306_103515 |
-| frost | 17.27 | 0.8273 | ours_260306_103614 |
-| fog | 18.44 | 0.8156 | ours_260306_224413 |
-| brightness | 11.74 | 0.8826 | ours_260306_224518 |
-| contrast | 19.16 | 0.8084 | ours_260306_224609 |
-| elastic_transform | 31.57 | 0.6843 | ours_260307_084150 |
-| pixelate | 35.22 | 0.6478 | ours_260307_084254 |
-| jpeg_compression | 36.66 | 0.6334 | ours_260307_224658 |
-| **Mean (15 corruptions)** | **27.69** | **0.7231** | |
-| **Mean (14, excl. gaussian)** | **26.57** | **0.7343** | |
+**버그 아님. 코드는 정상. 원인은 KL regularization이 너무 강해서 발생하는 progressive model degradation.**
 
-Note: The paper reports 61.13% for gaussian_noise; the 60.60% measured here is attributed to GPU hardware difference (~0.5 pp gap, documented in project memory).
+defocus_blur와 glass_blur에서 offline_acc < online_acc인 이유:
+- online_acc는 adaptation 전체 과정의 **누적 평균** (초반 높은 구간 포함)
+- offline_acc는 adaptation 완료 후 **최종 모델**의 평가
+- 모델이 step 50 이후 지속적으로 악화되므로, 최종 모델(offline)이 누적 평균(online)보다 나쁜 것은 논리적으로 필연
 
 ---
 
-## 3. MINT-TTA: Best-Config Accuracy Per Corruption
+## 2. 관찰 (Observations)
 
-Best config is chosen per-corruption from the sweep over lambda_MI in {1, 2, 5, 10},
-L_cov in {off (cov0), on (cov01)}, and I2T weight in {0, 1}.
-Results sourced from `runs/mint_tta/results_summary.csv` (curated) and shard logs.
+### 2.1 Step-by-step accuracy 추이
 
-| Corruption | BATCLIP Acc | MINT Best Acc | Delta (pp) | Best Lambda | Best Config |
-|---|---|---|---|---|---|
-| gaussian_noise | 0.6060 | 0.7160 | +11.00 | 5.0 | barlow_cov01+uniform_i2t |
-| shot_noise | 0.6243 | 0.7490 | +12.47 | 1.0 | lmi1.0_cov0_i2t1 |
-| impulse_noise | 0.6014 | 0.8020 | +20.06 | 1.0 | lmi1.0_cov0_i2t1 |
-| defocus_blur | 0.7900 | 0.8530 | +6.30 | 2.0 | lmi2.0_cov0_i2t1 |
-| glass_blur | 0.5362 | 0.7390 | +20.28 | 2.0 | lmi2.0_cov0_i2t1 |
-| motion_blur | 0.7877 | 0.8500 | +6.23 | 2.0 | lmi2.0_cov0_i2t1 |
-| zoom_blur | 0.8039 | 0.8860 | +8.21 | 2.0 | lmi2.0_cov0_i2t1 |
-| snow | 0.8225 | 0.8710 | +4.85 | 2.0 | lmi2.0_cov0_i2t0 |
-| frost | 0.8273 | 0.8690 | +4.17 | 5.0 | lmi5.0_cov0_i2t1 |
-| fog | 0.8156 | 0.8860 | +7.04 | 1.0 | lmi1.0_cov0_i2t0 |
-| brightness | 0.8826 | 0.9360 | +5.34 | 5.0 | lmi5.0_cov0_i2t0 |
-| contrast | 0.8084 | 0.9040 | +9.56 | 1.0 | lmi1.0_cov0_i2t1 |
-| elastic_transform | 0.6843 | 0.7790 | +9.47 | 1.0 | lmi1.0_cov0_i2t1 |
-| pixelate | 0.6478 | 0.8070 | +15.92 | 5.0 | lmi5.0_cov0_i2t0 |
-| jpeg_compression | 0.6334 | 0.7560 | +12.26 | 5.0 | lmi5.0_cov0_i2t0 |
-| **Mean (15 corruptions)** | **0.7231** | **0.8392** | **+11.61** | | |
-| **Mean (14, excl. gaussian)** | **0.7343** | **0.8418** | **+10.75** | | |
+#### gaussian_noise (lam=1.07) -- 정상: 단조 개선
+| step | online_acc | H(p_bar) |
+|------|-----------|----------|
+| 50 | 0.2225 | 5.486 |
+| 200 | 0.2560 | 5.129 |
+| 400 | 0.2698 | 4.785 |
+| 600 | 0.2748 | 4.726 |
+| 782 | 0.2775 | 3.667 |
+offline=0.2802 (> online) -- 정상
 
-Observation: gaussian_noise best config uses L_cov (Barlow) whereas the other 14 corruptions
-use cov0 (no Barlow term). This is because the gaussian_noise result derives from the phase
-ablation experiments (run_20260304_151922), not the lambda sweep shards.
+#### defocus_blur (lam=3.91) -- 비정상: step 100 이후 지속 하락
+| step | online_acc | H(p_bar) |
+|------|-----------|----------|
+| 50 | 0.2594 | 6.475 |
+| 100 | **0.2612** (peak) | 6.516 |
+| 200 | 0.2470 | 6.502 |
+| 400 | 0.2216 | 6.528 |
+| 600 | 0.1981 | 6.520 |
+| 782 | 0.1822 | 6.105 |
+offline=0.1248 (< online 0.1822) -- 최종 모델이 더 나쁨
 
----
+#### glass_blur (lam=3.41) -- 비정상: step 100 이후 지속 하락
+| step | online_acc | H(p_bar) |
+|------|-----------|----------|
+| 50 | 0.2266 | 6.352 |
+| 100 | **0.2345** (peak) | 6.328 |
+| 200 | 0.2191 | 6.476 |
+| 400 | 0.1918 | 6.491 |
+| 600 | 0.1713 | 6.486 |
+| 782 | 0.1559 | 6.066 |
+offline=0.0950 (< online 0.1559) -- 최종 모델이 더 나쁨
 
-## 4. MINT-TTA Lambda Sweep: Per-Corruption Accuracy by Lambda
+### 2.2 최종 H(p_bar) 비교
 
-All values below are best-of-two I2T settings (i2t0 vs i2t1) with L_cov=off (cov0).
-
-| Corruption | lmi=1 | lmi=2 | lmi=5 | lmi=10 | Best lmi |
-|---|---|---|---|---|---|
-| brightness | 0.9330 | 0.9340 | **0.9360** | 0.9350 | 5 |
-| contrast | **0.9040** | **0.9040** | 0.9030 | 0.8940 | 1 |
-| defocus_blur | 0.8500 | **0.8530** | 0.8370 | 0.8360 | 2 |
-| elastic_transform | **0.7790** | 0.7680 | 0.7680 | 0.7610 | 1 |
-| fog | **0.8860** | 0.8850 | 0.8770 | 0.8730 | 1 |
-| frost | 0.8640 | 0.8610 | **0.8690** | 0.8600 | 5 |
-| glass_blur | 0.7320 | **0.7390** | 0.7290 | 0.7030 | 2 |
-| impulse_noise | **0.8020** | 0.8000 | 0.7970 | 0.7860 | 1 |
-| jpeg_compression | 0.7510 | 0.7550 | **0.7560** | 0.7380 | 5 |
-| motion_blur | 0.8490 | **0.8500** | 0.8390 | 0.8250 | 2 |
-| pixelate | 0.7970 | 0.8030 | **0.8070** | 0.7930 | 5 |
-| shot_noise | **0.7490** | 0.7410 | 0.7400 | 0.7360 | 1 |
-| snow | 0.8640 | **0.8710** | **0.8710** | 0.8640 | 2/5 |
-| zoom_blur | 0.8810 | **0.8860** | 0.8650 | 0.8600 | 2 |
-
-Lambda distribution: lmi=1 best for 4 corruptions, lmi=2 best for 5, lmi=5 best for 4, lmi=10 best for 0.
-
-Observation: lambda=10 is dominated by smaller values across all corruptions. lambda=2 is the
-modal best. There is no single lambda that universally optimizes across corruption types.
-
----
-
-## 5. SoftLogitTTA: Available Results
-
-SoftLogitTTA was evaluated on gaussian_noise (severity=5, N=10K) only during the initial sweep.
-No per-corruption sweep was conducted. The files under `output/softlogittta_cifar10_c_26030[5-7]_*/`
-are all empty (0 bytes) — these directories were created but runs did not complete or redirect.
-
-| Method | Corruption | Accuracy | Delta vs BATCLIP | Source |
+| corruption | lam_auto | final H(p_bar) | ln(K)=6.91 | 편차 |
 |---|---|---|---|---|
-| SoftLogitTTA (ladj=3, w_uni=0.5, ent=True) | gaussian_noise | 0.6650 | +5.90 pp | v21_20260303_151500/results.json (label: ladj_3) |
-| SoftLogitTTA (ladj=5, w_uni=0.5, ent=True) | gaussian_noise | 0.6660 | +6.00 pp | v21_20260303_151500/results.json (label: ladj_5) |
+| gaussian_noise | 1.07 | 3.667 | 6.91 | -3.24 (정상 범위) |
+| shot_noise | 1.06 | 3.242 | 6.91 | -3.67 (정상 범위) |
+| impulse_noise | 1.33 | 3.831 | 6.91 | -3.08 (정상 범위) |
+| **defocus_blur** | **3.91** | **6.105** | 6.91 | **-0.81 (near-uniform)** |
+| **glass_blur** | **3.41** | **6.066** | 6.91 | **-0.84 (near-uniform)** |
 
-The best SoftLogitTTA result is 0.666 (ladj=5 or ladj=3, which tie to 3 decimal places).
-BATCLIP baseline for this run used 0.623 as reference (slightly different from the 0.606 measured
-with seed=1, QuickGELU — the 0.623 reference is from an earlier seed/config).
+### 2.3 cross-K 비교
 
----
-
-## 6. Method Comparison Summary (gaussian_noise, sev=5, N=10K)
-
-| Method | Accuracy | Delta vs BATCLIP | Notes |
-|---|---|---|---|
-| BATCLIP (ours, seed=1, QuickGELU) | 0.6060 | 0.00 pp | Confirmed baseline |
-| SoftLogitTTA (ladj=5, w_uni=0.5) | 0.6660 | +6.00 pp | Single corruption only |
-| MINT-TTA Phase 1 (hY_50, lmi=5) | 0.6970 | +11.00 pp | Intermediate config |
-| MINT-TTA Phase 4 (barlow_cov01, lmi=5) | 0.7120 | +10.60 pp | Pre-gap-ablation best |
-| MINT-TTA Gap6 (uniform_i2t, no_var) | 0.7160 | +11.00 pp | **Current best (gaussian_noise)** |
-
----
-
-## 7. Key Observations
-
-**Observation 1 — Gains are consistent across all corruption types.**
-MINT-TTA improves over BATCLIP on all 15 corruptions. The minimum gain is +4.17 pp (frost)
-and the maximum is +20.28 pp (glass_blur). Mean gain across 15 corruptions is +11.61 pp.
-
-**Observation 2 — Corruption difficulty correlates with absolute gain magnitude.**
-Hard corruptions (glass_blur acc=0.536, impulse_noise acc=0.601, shot_noise acc=0.624) show
-the largest absolute gains (+20.28, +20.06, +12.47 pp). Easy corruptions (brightness acc=0.883,
-snow acc=0.823, frost acc=0.827) show smaller gains (+5.34, +4.85, +4.17 pp).
-
-**Observation 3 — Optimal lambda is corruption-dependent.**
-lmi=1 is best for noise-type corruptions (shot_noise, impulse_noise) and semantic corruptions
-(fog, elastic_transform, contrast). lmi=2 is best for blur-type corruptions (defocus_blur,
-glass_blur, motion_blur, zoom_blur). lmi=5 is best for brightness/pixelate/jpeg. lmi=10
-never wins. This suggests a corruption-type-to-lambda mapping may be exploitable.
-
-**Observation 4 — I2T term helps for noise and blur, not for weather/digital corruptions.**
-i2t=1 (with I2T loss) outperforms i2t=0 for shot_noise, impulse_noise, defocus_blur,
-glass_blur, motion_blur, contrast, elastic_transform. i2t=0 outperforms for fog, snow,
-brightness, pixelate, jpeg_compression, zoom_blur. This warrants further investigation.
-
-**Observation 5 — L_cov (Barlow covariance term) provides marginal benefit.**
-The cov0 (no Barlow) configuration matches or exceeds cov01 on 14 of 15 corruptions in the
-sweep. The only exception is gaussian_noise where cov01 was tested in the phase ablation.
-The cov0/cov01 distinction may be noise-level differences given small N=200 per step.
-
-**Interpretation caveat:** All sweep results use N=10K samples per corruption with a single
-seed (seed=1). Variance across seeds is not measured for the per-corruption sweep. The
-gaussian_noise experiments (phase ablations) show step-level variance of approximately
-±3–5 pp in the rolling 200-sample window, consistent with high-variance mini-batch estimation.
+| K | corruption | lam_auto | online | offline | offline>online? |
+|---|---|---|---|---|---|
+| 10 | defocus_blur | 5.97 | 0.832 | 0.849 | Yes |
+| 100 | defocus_blur | 6.95 | 0.531 | 0.568 | Yes |
+| **1000** | **defocus_blur** | **3.91** | **0.182** | **0.125** | **No** |
+| 10 | glass_blur | 2.90 | 0.671 | 0.726 | Yes |
+| 100 | glass_blur | 2.58 | 0.344 | 0.407 | Yes |
+| **1000** | **glass_blur** | **3.41** | **0.156** | **0.095** | **No** |
+| 10 | gaussian_noise | 1.74 | 0.674 | 0.720 | Yes |
+| 100 | gaussian_noise | 2.77 | 0.360 | 0.414 | Yes |
+| 1000 | gaussian_noise | 1.07 | 0.278 | 0.280 | Yes |
 
 ---
 
-## 8. Data Gaps and Uncertainties
+## 3. 버그 여부 확인
 
-1. **SoftLogitTTA per-corruption data is absent.** The output directories for dates 260305–260307
-   are empty. A direct per-corruption comparison between SoftLogitTTA and MINT-TTA is not possible.
-2. **No multi-seed evaluation.** All results are single-seed (seed=1). The ~0.5 pp gap between
-   the measured gaussian_noise BATCLIP (60.60%) and the paper-reported (61.13%) indicates
-   hardware-level variance exists.
-3. **gaussian_noise MINT-TTA config mismatch.** The gaussian_noise best (0.716) uses the L_cov
-   Barlow term (from phase ablation), whereas the per-corruption sweep used cov0 only. The
-   gaussian_noise result cannot be directly compared with the other 14 corruptions' sweep configs.
-4. **N=200 per batch step.** With 50 steps over 10K samples, each step processes 200 examples.
-   The step-level accuracy curves show high variance (±5–7 pp swing in rolling window), making
-   the final-step accuracy the only stable metric.
+### 3.1 코드 검토 결과: 버그 없음
+
+1. **offline_eval 데이터**: `make_loader(CORRUPTION, preprocess)` -- 동일 corruption, 동일 N=50000으로 새 loader 생성. 다른 corruption 데이터를 평가하는 실수 없음.
+2. **모델 상태**: `state_init`에서 deep copy 후 adaptation 시작 (line 335). 이전 corruption의 adapted state가 누출되지 않음. `setting=reset_each_shift` 확인.
+3. **offline_eval 모드**: `model.eval()` 설정 후 `torch.no_grad()` 내에서 평가 (line 150-161). 정상.
+4. **corruption별 독립 실행**: 각 corruption이 별도 프로세스로 실행됨 (queue system). state 오염 가능성 없음.
+5. **kill threshold**: `KILL_THRESH=0.10`이며, defocus의 online은 0.18, glass는 0.16 -- kill되지 않고 끝까지 adaptation. `killed=false` 확인.
+
+### 3.2 online_acc가 누적 평균임을 확인
+
+코드 line 248-255:
+```python
+cum_corr += (preds == labels_b.to(device)).sum().item()
+cum_seen += len(labels_b)
+online_acc = cum_corr / cum_seen
+```
+이는 step 1부터 현재까지의 **누적 정확도**. 즉 초반에 높고 후반에 낮으면 누적 평균은 최종 instantaneous accuracy보다 높을 수 있음.
 
 ---
 
-## Appendix: File Locations
+## 4. 해석 (Interpretation)
 
-| Artifact | Path |
-|---|---|
-| BATCLIP baselines (14 corruptions) | `/home/jino/Lab/v2/experiments/baselines/BATCLIP/classification/output/ours_cifar10_c_26030[5-7]_*/` |
-| BATCLIP gaussian_noise | `/home/jino/Lab/v2/experiments/baselines/BATCLIP/classification/output/ours_cifar10_c_260301_214950/` |
-| MINT-TTA shard1 (lmi=1, corruptions 1–10+) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard1_lmi1_20260305_082445/mint_lmi1.log` |
-| MINT-TTA shard2 (lmi=1+2, contrast/elastic/pixel/jpeg + noise/blur) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard2_lmi1x2_20260305_213258/` |
-| MINT-TTA shard3 (lmi=2, zoom/snow/frost/fog/bright/contrast/elastic/pixel/jpeg) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard3_lmi2_20260306_103337/` |
-| MINT-TTA shard4 (lmi=5, all corruptions) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard4_lmi5_20260306_224341/` |
-| MINT-TTA shard5 (lmi=5+10, contrast/elastic/pixel/jpeg + noise/blur) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard5_lmi5x10_20260307_084122/` |
-| MINT-TTA shard6 (lmi=10, zoom/snow/frost/fog/bright/contrast/elastic/pixel/jpeg) | `/home/jino/Lab/v2/experiments/runs/mint_tta/shard6_lmi10_20260307_224626/` |
-| MINT-TTA gaussian_noise (phase ablations) | `/home/jino/Lab/v2/experiments/runs/mint_tta/run_20260304_151922/results.json` |
-| MINT-TTA gap ablations (Gap6: uniform_i2t) | `/home/jino/Lab/v2/experiments/runs/mint_tta/gap_ablations_20260304_203358/results.json` |
-| MINT-TTA curated CSV | `/home/jino/Lab/v2/experiments/runs/mint_tta/results_summary.csv` |
-| SoftLogitTTA v2.1 sweep (gaussian_noise) | `/home/jino/Lab/v2/experiments/runs/soft_logit_tta/v21_20260303_151500/results.json` |
+### 4.1 근본 원인: KL term 과잉에 의한 over-spreading
+
+Loss B = `-I_batch + (lam-1) * KL(p_bar || p_dag)`
+
+- **I_batch = H(p_bar) - mean(H(q_i))**: 배치 수준 mutual information. maximizing하면 confident + diverse prediction.
+- **KL(p_bar || p_dag)**: marginal을 target p_dag 쪽으로 당기는 regularizer.
+
+defocus_blur/glass_blur에서 lam=3.4~3.9 → **(lam-1)=2.4~2.9** 배의 KL 가중치.
+noise 계열에서 lam=1.0~1.3 → **(lam-1)=0.06~0.33** 배.
+
+**KL 가중치 차이가 ~10배.** 이로 인해:
+
+1. KL term이 loss를 지배 → p_bar를 p_dag (near-uniform)에 가깝게 밀어냄
+2. H(p_bar)가 6.1~6.5 수준 유지 (ln(1000)=6.91에 근접) → 예측 분포가 near-uniform
+3. 모델이 구별력을 상실 → accuracy가 step이 진행될수록 지속적으로 하락
+
+### 4.2 왜 lam_auto가 blur에서 높은가?
+
+`lam_auto = ||grad_Lent|| / ||grad_KL||`
+
+blur corruption은 noise와 달리 **feature space에서 구조적 왜곡**을 일으킴:
+- noise: high-frequency perturbation → feature 자체는 상대적으로 보존, L_ent gradient가 큼
+- blur: low-frequency feature의 systematical degradation → L_ent gradient는 작아지고, KL gradient도 작아지되 비율이 달라짐
+
+K=1000에서 이 효과가 증폭:
+- K=10: lam=5.97이지만 (lam-1)*KL term의 절대값이 작음 (K=10 KL 자체가 작음)
+- K=1000: lam=3.91이고 KL term이 K=1000 차원에서 커짐 → 절대적 영향력이 과도
+
+### 4.3 왜 K=10/100에서는 정상인가?
+
+K=10/100에서도 lam이 높지만 (defocus K=10: lam=5.97, K=100: lam=6.95):
+- 낮은 K에서는 KL(p_bar || p_dag)의 값 자체가 작음 (차원이 낮을수록 분포 간 거리가 작음)
+- 또한 1/K random baseline이 10%/1%이므로 모델의 starting accuracy가 이미 높음 (83%/53%)
+- 따라서 (lam-1)*KL이 loss를 지배하지 못하고 I_batch가 적절히 균형
+
+K=1000에서는:
+- starting accuracy가 ~26% (1/K=0.1%)
+- KL term의 절대값이 K 증가와 함께 증가
+- lam=3.9일 때 KL term이 I_batch를 압도 → uniformization 발생
+
+### 4.4 c (gradient dot product) 분석
+
+| corruption | c | 해석 |
+|---|---|---|
+| gaussian_noise | -11.60 | 강한 반대 gradient (c<0) → lam 낮게 설정됨 (1.07) |
+| defocus_blur | -5.06 | 중간 반대 gradient → lam이 상대적으로 높게 설정 (3.91) |
+| glass_blur | -5.95 | 중간 반대 gradient → lam이 상대적으로 높게 설정 (3.41) |
+
+c가 음수면 L_ent와 KL의 gradient가 반대 방향이므로 trade-off가 존재.
+noise에서 c가 더 강하게 음수(-11.6)인데도 lam이 낮은 것은 ||grad_Lent||가 상대적으로 작기 때문 (noise에서 L_ent gradient가 KL gradient보다 약간만 큼).
+
+---
+
+## 5. 불확실성 (Uncertainty)
+
+1. **seed 1개**: seed=1 단일 실행. 다른 seed에서 동일 패턴이 재현되는지 미검증.
+2. **나머지 10개 corruption 미완료**: K=1000에서 blur 외 다른 corruption (motion_blur, zoom_blur, snow 등)의 lam과 degradation 패턴 미확인.
+3. **zero-shot baseline 부재**: K=1000 ImageNet-C의 adaptation 없는 zero-shot accuracy를 측정하지 않아서, adaptation이 zero-shot 대비 개선인지 악화인지 정량적으로 비교 불가.
+4. **lam clipping 효과 미실험**: lam_auto를 2.0 이하로 clipping하면 blur에서도 정상 작동하는지 검증 필요.
+
+---
+
+## 6. 다음 단계 (Next Steps)
+
+1. **lam clipping 실험**: `lam_auto = min(lam_auto, 2.0)` 적용 후 defocus_blur/glass_blur 재실행 → degradation 해소 여부 확인
+2. **zero-shot baseline 측정**: K=1000 ImageNet-C 15-corruption zero-shot accuracy 측정
+3. **나머지 10개 corruption 완료**: 현재 5/15 완료. 나머지에서도 유사 패턴 발생하는지 확인
+4. **adaptive lam schedule 검토**: step 0에서만 lam을 결정하는 대신, N step마다 재측정하여 조정하는 방식 고려

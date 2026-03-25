@@ -19,6 +19,9 @@ SAFE_BASH = [
     r"^\s*grep\b(\s|$)",
     r"^\s*python3?\s+\.claude/hooks/log_peek\.py\s+[^;&|]+\s*$",
     r"^\s*cat\s+[^;&|]+$",  # simple cat of one path (no chaining)
+    r"^\s*ssh\s+.*100\.125\.103\.5",
+    r"^\s*rsync\b.*100\.125\.103\.5",
+    r"^\s*scp\b.*100\.125\.103\.5",
 ]
 
 # Hard-deny obviously dangerous commands even if the user would otherwise be prompted.

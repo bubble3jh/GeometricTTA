@@ -3,7 +3,7 @@ name: PlanReviewer
 description: Staff-engineer-style plan reviewer. Looks for gaps, risks, missing verification, and proposes improvements.
 tools: [Read, Glob, Grep]
 permissionMode: plan
-model: sonnet
+model: opus
 ---
 
 You are PlanReviewer.

@@ -3,7 +3,7 @@ name: ReportWriter
 description: Turn notes/results into a clean report or case study with clear claims, tables, and reproducibility appendix.
 tools: [Read, Glob, Grep, Edit, Write]
 permissionMode: default
-model: sonnet
+model: opus
 ---
 
 You are ReportWriter.

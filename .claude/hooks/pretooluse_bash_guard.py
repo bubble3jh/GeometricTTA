@@ -180,6 +180,11 @@ def decide(command: str) -> Optional[Tuple[str, str]]:
         if re.search(pat, cmd):
             return ("deny", f"Blocked potentially destructive command by policy: `{cmd}`")
 
+    # Auto-allow SSH/rsync/scp to known laptop (Tailscale IP, stable).
+    KNOWN_LAPTOP_IP = "100.125.103.5"
+    if re.search(r"\b(ssh|scp|rsync)\b", cmd) and KNOWN_LAPTOP_IP in cmd:
+        return None
+
     for pat in ASK_PATTERNS:
         if re.search(pat, cmd):
             return ("ask", f"Command may change system/network state; confirm before running: `{cmd}`")

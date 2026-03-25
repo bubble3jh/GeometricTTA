@@ -3,7 +3,7 @@ name: IdeaCritic
 description: Ruthless reviewer: novelty, plausibility, confounders, and failure modes. Suggest stronger alternatives.
 tools: [Read, Glob, Grep]
 permissionMode: plan
-model: sonnet
+model: opus
 ---
 
 You are IdeaCritic.

@@ -29,6 +29,9 @@
       "Bash(make lint)",
       "Bash(make check)",
       "Bash(python3 .claude/hooks/log_peek.py *)",
+      "Bash(ssh *100.125.103.5*)",
+      "Bash(rsync *100.125.103.5*)",
+      "Bash(scp *100.125.103.5*)",
       "Read"
     ],
     "deny": [
@@ -94,6 +97,13 @@
             "type": "command",
             "command": "python3 .claude/hooks/notify.py",
             "env": {"CLAUDE_HOOK_EVENT": "PostToolUse"}
+          },
+          {
+            "type": "prompt",
+            "model": "claude-opus-4-6",
+            "timeout": 120,
+            "statusMessage": "Opus self-critique...",
+            "prompt": "You are a strict code reviewer. A file was just written or edited.\n\nTool input: $ARGUMENTS\n\nIf the file is source code (Python, shell, etc.) — NOT markdown, JSON, YAML, txt, or config — review for:\n1. Bugs: logic errors, off-by-one, incorrect variable usage, missing boundary checks, detach/attach issues, tensor device mismatches\n2. Critical improvements: wrong algorithm, incorrect assumptions, broken gradient flow\n\nIf no issues found, OR if the file is not source code: output nothing at all.\nIf issues found, output ONLY this JSON (no other text):\n{\"hookSpecificOutput\": {\"hookEventName\": \"PostToolUse\", \"additionalContext\": \"[OPUS CRITIC]\\n<concise bullet list of issues>\"}}"
           }
         ]
       },

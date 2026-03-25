@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-16
 **Type:** Pure diagnostic (no model changes)
-**Reference baseline:** H2 C-variant, online=0.6773, offline=0.7150
+**Reference baseline:** CAMA C-variant, online=0.6773, offline=0.7150
 **Data source:** `/home/jino/Lab/v2/experiments/runs/modality_gap_diagnostic/`
 **Instruction spec:** `manual_scripts/instructions/26.CLIP_geo_analysis.md`
 
@@ -12,7 +12,7 @@
 
 ### 1.1 Problem Statement
 
-CLIP-based test-time adaptation (TTA) methods face a reviewer-facing vulnerability: the current best method (H2, a KL evidence prior regularizer) is generic entropy regularization that does not exploit any CLIP-specific geometric structure. Prior attempts to leverage CLIP's text embedding geometry (CALM-T, CALM-AV class gate) failed because K=10 text embeddings are near-collinear (pairwise cosine approximately 0.84, effective rank approximately 2.03), killing any discriminative signal from text-text relationships.
+CLIP-based test-time adaptation (TTA) methods face a reviewer-facing vulnerability: the current best method (CAMA, a KL evidence prior regularizer) is generic entropy regularization that does not exploit any CLIP-specific geometric structure. Prior attempts to leverage CLIP's text embedding geometry (CALM-T, CALM-AV class gate) failed because K=10 text embeddings are near-collinear (pairwise cosine approximately 0.84, effective rank approximately 2.03), killing any discriminative signal from text-text relationships.
 
 ### 1.2 Key Insight: Modality Gap
 
@@ -30,7 +30,7 @@ This diagnostic shifts focus from text-text relationships to the image-text moda
 - Whether the gap vector is aligned with the collapse direction.
 - Per-class gap deformation under corruption.
 - Whether overconfident-wrong samples occupy a distinct position in gap space.
-- How the gap evolves during adaptation (H2 vs. collapsing vanilla).
+- How the gap evolves during adaptation (CAMA vs. collapsing vanilla).
 - Quantitative cone deformation across corruption types.
 
 ---
@@ -228,11 +228,11 @@ For correct samples: cos_par(pred)=cos_par(true)=-0.5916, cos_perp(pred)=cos_per
 
 ## 4. Block C: Adaptation Dynamics
 
-**Setup:** Two runs on gaussian_noise sev=5, N=10,000, B=200, 50 steps, seed=1. C1: H2 C-variant (lambda=2.0, evidence prior). C2: Vanilla entropy minimization (lambda=0.0). Step-level logging every 5 steps.
+**Setup:** Two runs on gaussian_noise sev=5, N=10,000, B=200, 50 steps, seed=1. C1: CAMA C-variant (lambda=2.0, evidence prior). C2: Vanilla entropy minimization (lambda=0.0). Step-level logging every 5 steps.
 
 **Source:** `c_dynamics/C1_H2/step_log.csv`, `c_dynamics/C2_VAN/step_log.csv`
 
-### 4.1 C1: H2 (Successful Adaptation) -- Trajectory
+### 4.1 C1: CAMA (Successful Adaptation) -- Trajectory
 
 | Step | Online Acc | cat% | mean_ent | H(p_bar) | gap_mag | gap_cos | gap_dir_stab | cone_cos | eff_rank |
 |------|-----------|------|----------|----------|---------|---------|-------------|----------|----------|
@@ -247,12 +247,12 @@ For correct samples: cos_par(pred)=cos_par(true)=-0.5916, cos_perp(pred)=cos_per
 | 45 | 0.674 | 0.138 | 0.496 | 2.279 | 1.023 | 0.196 | 0.793 | 0.689 | 135.62 |
 | 50 | 0.677 | 0.134 | 0.463 | 2.290 | 1.011 | 0.193 | 0.775 | 0.678 | 136.70 |
 
-**Observations on H2 gap dynamics:**
+**Observations on CAMA gap dynamics:**
 
-1. **Gap magnitude shrinks monotonically:** 1.139 (step 5) to 1.011 (step 50), a reduction of 0.128 (11.2%). H2 adaptation actively closes the modality gap.
+1. **Gap magnitude shrinks monotonically:** 1.139 (step 5) to 1.011 (step 50), a reduction of 0.128 (11.2%). CAMA adaptation actively closes the modality gap.
 2. **Gap cosine decreases:** 0.252 to 0.193, meaning the angle between image and text centroids increases even as L2 distance decreases. This implies the centroids move closer but in a way that changes their relative orientation.
 3. **Gap direction rotates continuously:** gap_dir_stability drops from 0.949 to 0.775 over 50 steps. By step 50, the gap direction has rotated approximately 39 degrees from its initial orientation (arccos(0.775) approximately 39 degrees).
-4. **Cone opens during adaptation:** batch cone mean cosine drops from 0.880 to 0.678, approaching the clean value of 0.789 and continuing past it. H2 actively decompresses the corrupted image cone.
+4. **Cone opens during adaptation:** batch cone mean cosine drops from 0.880 to 0.678, approaching the clean value of 0.789 and continuing past it. CAMA actively decompresses the corrupted image cone.
 5. **H(p_bar) remains high and stable:** 2.257 to 2.290 throughout, near the uniform maximum of ln(10)=2.303. The KL prior successfully prevents marginal collapse.
 6. **Batch effective rank is stable:** 134.6 to 136.7, showing the within-batch diversity is maintained.
 
@@ -269,16 +269,16 @@ Note: C2 was terminated after step 20 (4 log points) as collapse was confirmed (
 
 **Observations on vanilla gap dynamics:**
 
-1. **Gap magnitude increases slightly:** 1.139 to 1.174 (+0.035), opposite to H2's direction. Collapsing adaptation pushes modalities apart.
-2. **Gap cosine decreases faster:** 0.248 to 0.184 in only 20 steps (vs. H2's 0.252 to 0.193 in 50 steps).
-3. **Gap direction rotates:** 0.939 to 0.804 in 20 steps, comparable rotation rate to H2.
-4. **Cone tightens further:** 0.892 to 0.926. Instead of opening the cone (as H2 does), vanilla entropy minimization compresses it further. This is the geometric manifestation of collapse.
+1. **Gap magnitude increases slightly:** 1.139 to 1.174 (+0.035), opposite to CAMA's direction. Collapsing adaptation pushes modalities apart.
+2. **Gap cosine decreases faster:** 0.248 to 0.184 in only 20 steps (vs. CAMA's 0.252 to 0.193 in 50 steps).
+3. **Gap direction rotates:** 0.939 to 0.804 in 20 steps, comparable rotation rate to CAMA.
+4. **Cone tightens further:** 0.892 to 0.926. Instead of opening the cone (as CAMA does), vanilla entropy minimization compresses it further. This is the geometric manifestation of collapse.
 5. **H(p_bar) collapses catastrophically:** 1.449 to 0.045 in 20 steps (near-zero marginal entropy = single-class dominance).
 6. **Effective rank drops:** 133.0 to 124.2, confirming feature diversity loss.
 
 ### 4.3 Comparative Trajectory Analysis
 
-| Metric (step 5 to step 20) | H2 | Vanilla | Divergence |
+| Metric (step 5 to step 20) | CAMA | Vanilla | Divergence |
 |-----------------------------|-----|---------|------------|
 | Online acc | 0.490 to 0.630 (+0.140) | 0.354 to 0.215 (-0.139) | Opposite signs |
 | Gap magnitude | 1.139 to 1.074 (-0.065) | 1.139 to 1.174 (+0.035) | Opposite signs |
@@ -287,7 +287,7 @@ Note: C2 was terminated after step 20 (4 log points) as collapse was confirmed (
 | H(p_bar) | 2.257 to 2.270 (+0.013) | 1.449 to 0.045 (-1.404) | Opposite signs |
 | Effective rank | 134.6 to 135.8 (+1.2) | 133.0 to 124.2 (-8.8) | Opposite signs |
 
-**Key finding:** Every geometric metric diverges between H2 and vanilla adaptation. H2 closes the gap, opens the cone, and preserves diversity. Vanilla widens the gap, tightens the cone, and destroys diversity. The gap dynamics are strongly correlated with adaptation success.
+**Key finding:** Every geometric metric diverges between CAMA and vanilla adaptation. CAMA closes the gap, opens the cone, and preserves diversity. Vanilla widens the gap, tightens the cone, and destroys diversity. The gap dynamics are strongly correlated with adaptation success.
 
 ### 4.4 C3/C4: Mean-Centering (Not Tested)
 
@@ -315,13 +315,13 @@ Gaussian noise collapses to cat, impulse noise to dog, glass blur to bird, defoc
 
 Effective rank drops by 32.4 dimensions under gaussian noise (337.2 to 304.9) and pairwise cosine increases by +0.130. This cone narrowing is strongly correlated with corruption severity and accuracy degradation. The cone centroid barely moves (cone_shift >= 0.905), so the effect is compression, not displacement.
 
-### Finding 5: H2 actively reshapes the modality gap during adaptation (C1-C2)
+### Finding 5: CAMA actively reshapes the modality gap during adaptation (C1-C2)
 
-H2 reduces gap magnitude by 11.2% and opens the image cone (cosine 0.880 to 0.678) over 50 steps. Vanilla entropy minimization does the opposite: increases gap magnitude and tightens the cone further. The gap direction rotates approximately 39 degrees during H2 adaptation, indicating that the gap is not merely preserved but actively restructured.
+CAMA reduces gap magnitude by 11.2% and opens the image cone (cosine 0.880 to 0.678) over 50 steps. Vanilla entropy minimization does the opposite: increases gap magnitude and tightens the cone further. The gap direction rotates approximately 39 degrees during CAMA adaptation, indicating that the gap is not merely preserved but actively restructured.
 
 ### Finding 6: Gap dynamics are a consequence, not a cause, of successful adaptation
 
-The gap changes are correlated with accuracy improvement but the B1 result shows the gap direction is not causally related to the collapse direction. H2's gap-closing is a byproduct of the KL prior maintaining marginal diversity, which in turn forces the model to distribute features across the text cone rather than collapsing them.
+The gap changes are correlated with accuracy improvement but the B1 result shows the gap direction is not causally related to the collapse direction. CAMA's gap-closing is a byproduct of the KL prior maintaining marginal diversity, which in turn forces the model to distribute features across the text cone rather than collapsing them.
 
 ---
 
@@ -333,11 +333,11 @@ The gap changes are correlated with accuracy improvement but the B1 result shows
 
 1. The B1 FAIL result rules out gap-based correction methods (Scenarios 1 and 2).
 2. Finding 4 (cone compression) and Finding 5 (divergent gap dynamics) suggest that the informative geometric signal is the cone shape, not the gap vector.
-3. The most promising CLIP-specific direction is **cone-aware regularization**: methods that explicitly counteract the cone narrowing caused by corruption. H2's KL prior already does this implicitly (cone opens from 0.880 to 0.678 during adaptation), but a direct geometric objective could be more targeted.
+3. The most promising CLIP-specific direction is **cone-aware regularization**: methods that explicitly counteract the cone narrowing caused by corruption. CAMA's KL prior already does this implicitly (cone opens from 0.880 to 0.678 during adaptation), but a direct geometric objective could be more targeted.
 
 ### Specific next steps:
 
-1. **Cone regularization diagnostic:** Test whether adding an explicit cone-opening term (e.g., penalizing high pairwise cosine in the batch) provides benefit on top of H2.
+1. **Cone regularization diagnostic:** Test whether adding an explicit cone-opening term (e.g., penalizing high pairwise cosine in the batch) provides benefit on top of CAMA.
 2. **Corruption-specific sink class analysis:** Investigate why different corruptions create different sink classes. This may reveal corruption-specific structure that a single adaptation method cannot fully address.
 3. **15-corruption evaluation of gap dynamics:** The current C1/C2 data is for gaussian_noise only. Running the dynamics comparison on all 15 CIFAR-10-C corruptions would test whether the divergent behavior generalizes.
 
@@ -353,7 +353,7 @@ The gap changes are correlated with accuracy improvement but the B1 result shows
 
 1. **Single dataset:** All results are on CIFAR-10-C (K=10). The near-orthogonality of gap and collapse directions may not generalize to larger label spaces (ImageNet-C, K=1000) where the gap-to-text-anchor geometry is different.
 2. **Single severity:** Block B uses severity 5 only. The relationship between gap geometry and collapse may differ at lower severities where the cone is less compressed.
-3. **Block C limited to 2 runs:** Only H2 and vanilla were compared. Intermediate methods (e.g., H2 with different lambda values) would provide more nuanced trajectory information.
+3. **Block C limited to 2 runs:** Only CAMA and vanilla were compared. Intermediate methods (e.g., CAMA with different lambda values) would provide more nuanced trajectory information.
 4. **C3/C4 not executed:** Mean-centering was not tested. While the B1 result suggests it would be ineffective, this remains unverified.
 5. **Batch-level gap metrics:** Block C uses batch-level (B=200) gap measurements, which are noisy. Full-dataset gap tracking (every 5 steps on all N=10,000) would be more precise but was not done due to compute cost.
 6. **Cone analysis uses subsampled pairwise cosines (n=1,000):** Statistical precision is adequate for mean estimates but may miss tail behavior.
@@ -378,8 +378,8 @@ The gap changes are correlated with accuracy improvement but the B1 result shows
   a1_static_geometry.json          # Block A results
   b_corruption_geometry.json       # Block B results (5 corruptions)
   c_dynamics/
-    C1_H2/step_log.csv             # H2 adaptation trajectory (10 rows, every 5 steps)
-    C1_H2/run_config.json          # H2 config: kl_lam=2.0, elapsed=4239s
+    C1_H2/step_log.csv             # CAMA adaptation trajectory (10 rows, every 5 steps)
+    C1_H2/run_config.json          # CAMA config: kl_lam=2.0, elapsed=4239s
     C2_VAN/step_log.csv            # Vanilla trajectory (4 rows, terminated at step 20)
     C2_VAN/run_config.json         # Vanilla config: kl_lam=0.0, elapsed=2029s
   summary.json                     # Go/no-go decision and key findings
@@ -392,7 +392,7 @@ cd /home/jino/Lab/v2/experiments/baselines/BATCLIP/classification
 python ../../../../manual_scripts/codes/run_inst26_gap_diagnostic.py --block all
 ```
 
-### Key configuration (H2 C-variant)
+### Key configuration (CAMA C-variant)
 
 - Loss: L_ent - lambda * KL(p_bar || r), lambda=2.0
 - Evidence prior r: softmax(beta * S_topR), beta=0.3, R=5

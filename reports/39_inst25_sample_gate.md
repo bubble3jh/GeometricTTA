@@ -16,7 +16,7 @@ Inst 24 Phase 0 diagnostic 결과:
 **핵심 아이디어:** per-sample 신뢰도(a_i)를 L_ent 가중치로 사용.
 
 ```
-기존 H2:     L = mean(l_ent_i) + λ·KL(p̄ ‖ π)
+기존 CAMA:     L = mean(l_ent_i) + λ·KL(p̄ ‖ π)
 Sample gate: L = mean(a_i · l_ent_i) + λ·KL(p̄ ‖ π)   [a_i detached]
 ```
 
@@ -27,7 +27,7 @@ u_i    = max(0, cos(f_i, t̃_i) − mean_k cos(f_i, t_k))  # 초과 정렬
 a_i    = u_i / mean(u + ε)              # mean-normalised, mean ≈ 1
 ```
 
-**Base method:** H2 C-variant (Harmonic Simplex, α=0.1, β=0.3, λ=2.0)
+**Base method:** CAMA C-variant (Harmonic Simplex, α=0.1, β=0.3, λ=2.0)
 **Dataset:** CIFAR-10-C, gaussian_noise sev=5, N=10000, B=200, seed=1
 
 ---
@@ -38,7 +38,7 @@ a_i    = u_i / mean(u + ε)              # mean-normalised, mean ≈ 1
 |--------|----------------|-----------------|-------|
 | BATCLIP | 0.6060 | — | baseline |
 | CALM v1 | 0.6458 | — | oracle per-corr λ |
-| H2 C-variant | 0.6773 | 0.7150 | inst23 Run A |
+| CAMA C-variant | 0.6773 | 0.7150 | inst23 Run A |
 
 ---
 
@@ -48,7 +48,7 @@ a_i    = u_i / mean(u + ε)              # mean-normalised, mean ≈ 1
 
 | Run | Gate | Online | Δ_online | Offline | Δ_offline | cat% | Verdict |
 |-----|------|--------|----------|---------|-----------|------|---------|
-| **SG-0** | H2 baseline (no gate) | 0.6770 | — | 0.7141 | — | 0.135 | control |
+| **SG-0** | CAMA baseline (no gate) | 0.6770 | — | 0.7141 | — | 0.135 | control |
 | **SG-1** | Linear γ=1.0 | 0.6772 | +0.0002 | 0.7162 | +0.0021 | 0.133 | ⚠️ 미세 개선 |
 | **SG-2** | Soft γ=0.5 | 0.6764 | −0.0006 | 0.7163 | +0.0022 | 0.133 | ⚠️ 미세 개선 |
 | **SG-3** | Sharp γ=2.0 | 0.6767 | −0.0003 | **0.7181** | **+0.0040** | 0.132 | ⚠️ 미세 개선 |
@@ -75,7 +75,7 @@ a_i    = u_i / mean(u + ε)              # mean-normalised, mean ≈ 1
 
 **1. H2가 이미 text 정보를 대부분 활용 중**
 
-a_i는 image feature와 text mixture의 정렬을 측정. 그런데 H2의 logits 자체가 이미 `f_i · T`를 통해 계산됨 → H2 prior π가 이미 text 신호를 흡수한 뒤 sample gate가 추가하는 잔여 신호는 극히 작음.
+a_i는 image feature와 text mixture의 정렬을 측정. 그런데 H2의 logits 자체가 이미 `f_i · T`를 통해 계산됨 → CAMA prior π가 이미 text 신호를 흡수한 뒤 sample gate가 추가하는 잔여 신호는 극히 작음.
 
 **2. K=10 near-collinearity로 인한 a_i 분산 한계**
 
@@ -101,7 +101,7 @@ Step 5 기준: a_corr=1.07 (SG-1), step 50: a_corr=1.016 → 적응이 진행될
 | γ를 높이면 나아지는가? | ⚠️ SG-3(γ=2.0)이 최고지만 기준에 크게 못 미침 |
 | 신호 방향은 유효한가? | SG-6(inverse) 결과 확인 후 판단 |
 
-**예상 결론:** Sample gate 폐기. **H2 C-variant(offline=0.7150)를 현재 최강 방법으로 유지.**
+**예상 결론:** Sample gate 폐기. **CAMA C-variant(offline=0.7150)를 현재 최강 방법으로 유지.**
 
 ---
 

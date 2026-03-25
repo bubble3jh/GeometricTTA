@@ -4,6 +4,15 @@ description: Experiment operations — launch checklist, monitor, status writer 
 
 # Experiment operations
 
+## OOM 보호 (mandatory)
+실험 Python은 반드시 `python` 대신 `exp`로 실행:
+```bash
+nohup exp run_xxx.py ... > logfile 2>&1 &
+```
+- `exp` = `~/.local/bin/exp`: oom_score_adj=+500 설정 후 exec python
+- tmux/claude는 oom_score_adj=-500 (bashrc에서 설정) → OOM 발생 시 실험 Python이 먼저 kill
+- `exp`는 non-interactive shell에서도 동작 (standalone script, PATH에 있음)
+
 ## Pre-launch checklist (mandatory)
 Before starting any background experiment:
 ```bash
@@ -59,6 +68,9 @@ Block A/B/C 구조를 가진 긴 스크립트는 반드시:
 
 복구 패턴: 실험 loop 완료 후 summary/report 단계에서 crash 시 → 저장된 JSON을 읽어
 `build_summary` + `write_report`를 직접 호출해 GPU 재실행 없이 복구 가능.
+
+## Distributed execution (PC + Laptop)
+분산 실행 프로토콜은 `.claude/rules/60-distributed-experiments.md` 참조.
 
 ## Note on CLAUDE.md scoping
 `experiments/CLAUDE.md`의 상세 규칙은 CWD가 `experiments/` 하위일 때만 로드됨.
