@@ -1,0 +1,6 @@
+corruption,lambda_auto,lambda_eff,bk_scale,c,c_negative,I_batch_step0,online_acc,offline_acc,cat_pct,H_pbar,killed,elapsed_s,note
+gaussian_noise,1.0688,1.0044,0.064,-11.5990,True,1.3777,0.2767,0.2791,0.0041,3.5599,False,16169.6,
+shot_noise,1.0609,1.0039,0.064,-7.0348,True,1.6384,0.2965,0.316,0.0042,3.337,False,14807.3,
+impulse_noise,1.3344,1.0214,0.064,-8.8526,True,1.6135,0.2988,0.3114,0.0042,3.4337,False,14793.0,
+defocus_blur,3.9090,1.1862,0.064,-5.0598,True,2.0013,0.3169,0.3129,0.0023,3.2724,False,14889.9,
+glass_blur,3.4077,1.1541,0.064,-5.9548,True,1.8173,0.3255,,0.003,3.372,False,,laptop 재실행 중 (brightness 완료 후 bash queue에서 자동 실행)
